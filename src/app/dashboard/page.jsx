@@ -1,171 +1,97 @@
+
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
+import { Layout, Input, Button, Card, Row, Col, Typography, Spin } from 'antd';
+import { UserOutlined, RobotOutlined } from '@ant-design/icons';
 
-const Dashboard = () => {
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
+const { Header, Content } = Layout;
+const { TextArea } = Input;
+const { Title, Text } = Typography;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+export default function Dashboard() {
+    const [message, setMessage] = useState('');
+    const [response, setResponse] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    if (!input.trim()) return;
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message }),
+            });
 
-    const userId = 'test-user'; // or get it from Supabase session if needed
-    const prompt = input;
+            if (!response.ok) {
+                throw new Error('Failed to fetch response');
+            }
 
-    setMessages(prev => [...prev, { role: 'user', content: prompt }]);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId, prompt }),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Server responded with error:', res.status, errorText);
-        throw new Error(`Failed to fetch response: ${errorText}`);
-      }
-
-      const data = await res.json();
-      console.log('Response from OpenAI:', data);
-
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
-    } catch (error) {
-      console.error('Error in handleSubmit:', {
-        message: error.message,
-        stack: error.stack,
-        error,
-      });
-
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: "Sorry, I'm having trouble responding right now.",
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="dashboard-container">
-      <h1>Chat Assistant</h1>
-      <div className="messages">
-        {messages.map((msg, index) => (
-          <div key={index} className={`message ${msg.role}`}>
-            <strong>{msg.role === 'user' ? 'You: ' : 'Assistant: '}</strong>{msg.content}
-          </div>
-        ))}
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={loading}
-          placeholder="Type your message..."
-        />
-        <button type="submit" disabled={loading}>Send</button>
-      </form>
-
-      {loading && <p className="loading">Loading...</p>}
-
-      <style jsx>{`
-        .dashboard-container {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 20px;
-          font-family: 'Arial', sans-serif;
+            const data = await response.json();
+            if (data.answer) {
+                setResponse(data.answer);
+            } else {
+                setResponse('No answer returned');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            setResponse('Error occurred while fetching the response.');
+        } finally {
+            setIsLoading(false);
         }
+    };
 
-        h1 {
-          text-align: center;
-          font-size: 2rem;
-          color: #333;
-        }
+    return (
+        <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+            <Header style={{ background: '#001529', padding: '0 24px' }}>
+                <Title level={3} style={{ color: 'white', lineHeight: '64px', marginBottom: 0 }}>
+                    Chat with Ollama
+                </Title>
+            </Header>
 
-        .messages {
-          max-height: 400px;
-          overflow-y: auto;
-          margin-bottom: 20px;
-          padding: 10px;
-          border: 1px solid #ccc;
-          border-radius: 8px;
-          background-color: #f9f9f9;
-        }
+            <Content style={{ padding: '24px 50px' }}>
+                <Row justify="center">
+                    <Col xs={24} sm={22} md={20} lg={18} xl={16}>
+                        <Card style={{ marginBottom: 16 }}>
+                            <form onSubmit={handleSendMessage}>
+                                <TextArea
+                                    rows={4}
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    placeholder="Ask something..."
+                                    style={{ marginBottom: 12 }}
+                                />
+                                <Button type="primary" htmlType="submit" loading={isLoading}>
+                                    Send
+                                </Button>
+                            </form>
+                        </Card>
 
-        .message {
-          margin: 10px 0;
-        }
+                        {message && (
+                            <Card style={{ marginBottom: 16 }}>
+                                <UserOutlined /> <Text strong>You</Text>
+                                <p>{message}</p>
+                            </Card>
+                        )}
 
-        .message.user {
-          background-color: #d1ffd6;
-          padding: 10px;
-          border-radius: 5px;
-          align-self: flex-end;
-        }
+                        {response && (
+                            <Card>
+                                <RobotOutlined /> <Text strong>Ollama</Text>
+                                <p>{response}</p>
+                            </Card>
+                        )}
 
-        .message.assistant {
-          background-color: #f0f0f0;
-          padding: 10px;
-          border-radius: 5px;
-          align-self: flex-start;
-        }
-
-        form {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        input {
-          width: 80%;
-          padding: 10px;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-          font-size: 1rem;
-          outline: none;
-        }
-
-        input:focus {
-          border-color: #4CAF50;
-        }
-
-        button {
-          padding: 10px 20px;
-          background-color: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-        }
-
-        button:disabled {
-          background-color: #ccc;
-        }
-
-        button:hover {
-          background-color: #45a049;
-        }
-
-        .loading {
-          text-align: center;
-          margin-top: 10px;
-        }
-      `}</style>
-    </div>
-  );
-};
-
-export default Dashboard;
+                        {isLoading && (
+                           <Spin spinning={true} tip="Thinking..." style={{ marginTop: 20 }}>
+                           <div style={{ minHeight: 50 }} />
+                         </Spin>
+                        )}
+                    </Col>
+                </Row>
+            </Content>
+        </Layout>
+    );
+}

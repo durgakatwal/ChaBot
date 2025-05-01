@@ -1,55 +1,53 @@
-import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-export async function POST(req) {
-  try {
-    const body = await req.json();
-    const { userId, prompt } = body;
-
-    // Validate input
-    if (!userId || !prompt) {
-      return new Response(JSON.stringify({ message: "Missing userId or prompt" }), {
-        status: 400,
+import { supabase } from '/src/app/lib/supabase' 
+export async function POST(request) {
+    try {
+      const { message } = await request.json();
+  
+      const ollamaApiUrl = 'http://127.0.0.1:11434/v1/chat/completions';
+  
+      const ollamaResponse = await fetch(ollamaApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama3', 
+          messages: [
+            {
+              role: 'user',
+              content: message,
+            },
+          ],
+        }),
       });
-    }
-
-    // Get OpenAI response
-    const gptResponse = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const answer = gptResponse.choices[0].message.content;
-
-    // Save to Supabase
-    const { error } = await supabase.from('messages').insert([
-      { user_id: userId, prompt, response: answer },
-    ]);
-
-    if (error) {
-      console.error('Supabase error:', error.message);
-      return new Response(JSON.stringify({ message: 'Failed to save message to database' }), {
+  
+      if (!ollamaResponse.ok) {
+        const errText = await ollamaResponse.text();
+        console.error('Failed to fetch from Ollama:', ollamaResponse.status, errText);
+        return new Response(JSON.stringify({ error: 'Failed to fetch from Ollama', detail: errText }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+  
+      const data = await ollamaResponse.json();
+      const answer = data.choices?.[0]?.message?.content ?? 'No answer received from Ollama.';
+  
+      return new Response(JSON.stringify({ answer }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      console.error('Error in /api/chat route:', error);
+      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
         status: 500,
+        headers: { 'Content-Type': 'application/json' },
       });
     }
-
-    return new Response(JSON.stringify({ response: answer }), {
-      status: 200,
-    });
-
-  } catch (error) {
-    console.error('API Route Error:', error.message || 'No message', error);
-    return new Response(JSON.stringify({ message: error.message || 'Unknown error occurred' }), {
-      status: 500,
-    });
   }
-}
+  
+
+
+
+
