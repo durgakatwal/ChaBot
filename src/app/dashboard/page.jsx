@@ -48,7 +48,7 @@ export default function Dashboard() {
         <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
             <Header style={{ background: '#001529', padding: '0 24px' }}>
                 <Title level={3} style={{ color: 'white', lineHeight: '64px', marginBottom: 0 }}>
-                    Chat with Ollama
+                    DChat
                 </Title>
             </Header>
 
