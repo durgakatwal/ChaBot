@@ -1,19 +1,18 @@
 'use client';
 import { useState } from 'react';
+import { Form, Input, Button, Typography, message } from 'antd';
 import { useRouter } from 'next/navigation';
-import { supabase }  from '../lib/supabase'
-import styles from '../styles/RegisterPage.module.css';
+import { supabase } from '/src/app/lib/supabase';
+import { LoginOutlined } from '@ant-design/icons';
+
+const { Title, Text } = Typography;
 
 const LoginPage = () => {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError(null);
+  const onFinish = async (values) => {
+    const { email, password } = values;
     setLoading(true);
 
     try {
@@ -22,69 +21,51 @@ const LoginPage = () => {
         password,
       });
 
-      if (signInError) {
-        throw signInError;
-      }
+      if (signInError) throw signInError;
 
-      // Redirect after successful login
+      message.success('Login successful!');
       router.push('/dashboard');
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
+      message.error(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Login</h1>
-      {error && (
-        <div className={styles.error}>
-          {error}
-        </div>
-      )}
-      <form onSubmit={handleLogin} className={styles.form}>
-        <div className={styles.inputGroup}>
-          <label htmlFor="email" className={styles.label}>Email</label>
-          <input
-            id="email"
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={styles.input}
-            required
-            disabled={loading}
-          />
-        </div>
-        <div className={styles.inputGroup}>
-          <label htmlFor="password" className={styles.label}>Password</label>
-          <input
-            id="password"
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={styles.input}
-            required
-            disabled={loading}
-          />
-        </div>
-        <button 
-          type="submit" 
-          className={styles.button}
-          disabled={loading}
+    <div style={{ maxWidth: 400, margin: 'auto', padding: 24 }}>
+      <Title level={2} style={{ textAlign: 'center' }}><LoginOutlined /> Login</Title>
+
+      <Form layout="vertical" onFinish={onFinish}>
+        <Form.Item
+          name="email"
+          label="Email"
+          rules={[
+            { required: true, message: 'Please enter your email' },
+            { type: 'email', message: 'Enter a valid email' },
+          ]}
         >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-      <div className={styles.footer}>
-        <p className={styles.footerText}>
-        {`Don't  have an account?`}{' '}
-          <a href="/register" className={styles.link}>
-            Register here
-          </a>
-        </p>
+          <Input placeholder="Enter your email" />
+        </Form.Item>
+
+        <Form.Item
+          name="password"
+          label="Password"
+          rules={[{ required: true, message: 'Please enter your password' }]}
+        >
+          <Input.Password placeholder="Enter your password" />
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading} block>
+            {loading ? 'Logging in...' : 'Login'}
+          </Button>
+        </Form.Item>
+      </Form>
+
+      <div style={{ textAlign: 'center' }}>
+        <Text>Don&apos;t have an account? </Text>
+        <a href="/register">Register here</a>
       </div>
     </div>
   );

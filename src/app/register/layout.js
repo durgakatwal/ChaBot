@@ -24,7 +24,7 @@ export const metadata = {
     return (
       <div>
         <header>
-          <h1>IceBrkr AI Registration Form</h1>
+          <h1><b>DChat</b></h1>
         </header>
         <main>
           {children}  {/* This is where the page content (like the registration form) will go */}

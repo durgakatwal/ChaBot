@@ -1,9 +1,9 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import { Layout, Input, Button, Card, Row, Col, Typography, Spin } from 'antd';
 import { UserOutlined, RobotOutlined } from '@ant-design/icons';
+import ReactMarkdown from 'react-markdown'; // ✅ Add this
 
 const { Header, Content } = Layout;
 const { TextArea } = Input;
@@ -80,14 +80,15 @@ export default function Dashboard() {
                         {response && (
                             <Card>
                                 <RobotOutlined /> <Text strong>Ollama</Text>
-                                <p>{response}</p>
+                                {/* ✅ Use ReactMarkdown to render the answer properly */}
+                                <ReactMarkdown>{response}</ReactMarkdown>
                             </Card>
                         )}
 
                         {isLoading && (
-                           <Spin spinning={true} tip="Thinking..." style={{ marginTop: 20 }}>
-                           <div style={{ minHeight: 50 }} />
-                         </Spin>
+                            <Spin spinning={true} tip="Thinking..." style={{ marginTop: 20 }}>
+                                <div style={{ minHeight: 50 }} />
+                            </Spin>
                         )}
                     </Col>
                 </Row>

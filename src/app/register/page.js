@@ -1,35 +1,32 @@
 'use client';
 import { useState } from 'react';
-import { supabase } from '/src/app/lib/supabase' 
+import { Form, Input, Button, message, Typography } from 'antd';
+import { supabase } from '/src/app/lib/supabase';
+import { UserAddOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation'; //  Import router(when the registration is completed it automatically redirect to the login page)
 
-import styles from '../styles/RegisterPage.module.css';
+const { Title } = Typography;
 
 const RegisterPage = () => {
-  const [FirstName, setFirstName] = useState('');
-  const [LastName, setLastName] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter(); // Initialize router
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
+  const onFinish = async (values) => {
+    setLoading(true);
+    const { firstName, lastName, address, city, email, phone, password } = values;
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (signUpError) throw signUpError;
 
-      // Insert profile info into a separate table like 'users' or 'profiles'
       const { error: dbError } = await supabase.from('registrations').insert([
         {
-          FirstName,
-          LastName,
+          FirstName: firstName,
+          LastName: lastName,
           address,
           city,
           email,
@@ -39,35 +36,88 @@ const RegisterPage = () => {
 
       if (dbError) throw dbError;
 
-      alert('Registration successful! Please check your email to confirm.');
-      // Reset form
-      setFirstName('');
-      setLastName('');
-      setAddress('');
-      setCity('');
-      setEmail('');
-      setPhone('');
-      setPassword('');
+      message.success('Registration successful! Please check your email to confirm.');
+
+      //  Redirect to login page
+      router.push('/login');
     } catch (error) {
-      setError(error.message);
-      alert('Error: ' + error.message);
+      message.error(error.message || 'Registration failed.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Registration Form</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleRegister}>
-        <input type="text" placeholder="First Name" value={FirstName} onChange={(e) => setFirstName(e.target.value)} className={styles.input} />
-        <input type="text" placeholder="Last Name" value={LastName} onChange={(e) => setLastName(e.target.value)} className={styles.input} />
-        <input type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} className={styles.input} />
-        <input type="text" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} className={styles.input} />
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={styles.input} />
-        <input type="tel" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} className={styles.input} />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className={styles.input} />
-        <button type="submit" className={styles.button}>Submit</button>
-      </form>
+    <div style={{ maxWidth: 500, margin: 'auto', padding: 24 }}>
+      <Title level={2} style={{ textAlign: 'center' }}>
+        <UserAddOutlined /> Register
+      </Title>
+      <Form layout="vertical" onFinish={onFinish}>
+        <Form.Item
+          name="firstName"
+          label="First Name"
+          rules={[{ required: true, message: 'Please enter your first name' }]}
+        >
+          <Input placeholder="First Name" />
+        </Form.Item>
+
+        <Form.Item
+          name="lastName"
+          label="Last Name"
+          rules={[{ required: true, message: 'Please enter your last name' }]}
+        >
+          <Input placeholder="Last Name" />
+        </Form.Item>
+
+        <Form.Item
+          name="address"
+          label="Address"
+          rules={[{ required: true, message: 'Please enter your address' }]}
+        >
+          <Input placeholder="Address" />
+        </Form.Item>
+
+        <Form.Item
+          name="city"
+          label="City"
+          rules={[{ required: true, message: 'Please enter your city' }]}
+        >
+          <Input placeholder="City" />
+        </Form.Item>
+
+        <Form.Item
+          name="email"
+          label="Email"
+          rules={[
+            { required: true, message: 'Please enter your email' },
+            { type: 'email', message: 'Enter a valid email' },
+          ]}
+        >
+          <Input placeholder="Email" />
+        </Form.Item>
+
+        <Form.Item
+          name="phone"
+          label="Phone Number"
+          rules={[{ required: true, message: 'Please enter your phone number' }]}
+        >
+          <Input placeholder="Phone Number" />
+        </Form.Item>
+
+        <Form.Item
+          name="password"
+          label="Password"
+          rules={[{ required: true, message: 'Please enter a password' }]}
+        >
+          <Input.Password placeholder="Password" />
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading} block>
+            Register
+          </Button>
+        </Form.Item>
+      </Form>
     </div>
   );
 };
